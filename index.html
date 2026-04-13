@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGIS Wisata Alam Yogyakarta</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #07140f;
+      --panel: rgba(10, 26, 20, 0.88);
+      --panel-2: rgba(13, 31, 24, 0.92);
+      --panel-soft: rgba(255, 255, 255, 0.08);
+      --stroke: rgba(255, 255, 255, 0.12);
+      --text: #eefbf4;
+      --muted: #b8d6c4;
+      --accent: #38b46a;
+      --accent-2: #9be15d;
+      --danger: #ef4444;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(180deg, #08130f 0%, #0d1f18 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: 410px 1fr;
+    }
+
+    .sidebar {
+      position: relative;
+      height: 100vh;
+      padding: 18px;
+      background:
+        radial-gradient(circle at top left, rgba(155, 225, 93, 0.18), transparent 34%),
+        linear-gradient(180deg, rgba(9, 23, 18, 0.97) 0%, rgba(7, 17, 14, 0.95) 100%);
+      border-right: 1px solid var(--stroke);
+      overflow-y: auto;
+      backdrop-filter: blur(12px);
+      scroll-behavior: smooth;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background:
+        linear-gradient(160deg, rgba(8, 39, 28, 0.84), rgba(12, 29, 22, 0.9)),
+        url('https://images.unsplash.com/photo-1513326738677-b964603b136d?auto=format&fit=crop&w=1200&q=80') center/cover;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.28));
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.10);
+      color: #eefbf4;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      line-height: 1.03;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      max-width: 320px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #e2f5ea;
+      line-height: 1.65;
+      font-size: 14px;
+      max-width: 330px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      border-radius: 18px;
+      padding: 14px 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 21px;
+      margin-bottom: 5px;
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: #d7efe0;
+    }
+
+    .card {
+      border-radius: var(--radius);
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .card p,
+    .card li,
+    .card label,
+    .card small,
+    .card select,
+    .card input[type="range"] {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .search-wrap,
+    .select-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-wrap input,
+    .select-wrap select {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      outline: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .search-wrap input::placeholder {
+      color: #a9c8b5;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      user-select: none;
+      transition: 0.2s ease;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .chip.active {
+      background: linear-gradient(135deg, rgba(56, 180, 106, 0.3), rgba(155, 225, 93, 0.18));
+      border-color: rgba(155, 225, 93, 0.35);
+      box-shadow: 0 0 0 1px rgba(155, 225, 93, 0.08) inset;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 10px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .triple-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); opacity: 0.96; }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--accent), #2d8d55);
+      color: white;
+    }
+
+    .ghost-btn {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .danger-btn {
+      background: rgba(239, 68, 68, 0.13);
+      color: #ffd7d7;
+      border: 1px solid rgba(239, 68, 68, 0.22);
+    }
+
+    .slider-wrap {
+      margin-top: 10px;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .place-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .place-item {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .place-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .place-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .place-name {
+      font-weight: 700;
+      color: white;
+      font-size: 14px;
+    }
+
+    .badge {
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .place-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 6px;
+    }
+
+    .place-meta {
+      font-size: 12px;
+      color: #d8f3e2;
+    }
+
+    .legend-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .legend-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .team-box {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .team-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .map-wrap {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      background: #0a1b14;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .floating-panel {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 700;
+      width: min(390px, calc(100% - 36px));
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(11, 27, 21, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .floating-panel h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .floating-panel p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .map-toolbar {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 700;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tool-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: rgba(11, 27, 21, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .map-overlay-bottom {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 700;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(11, 27, 21, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #dff7e8;
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .about-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.52);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+
+    .about-modal.active { display: flex; }
+
+    .about-content {
+      width: min(760px, 100%);
+      max-height: 86vh;
+      overflow-y: auto;
+      border-radius: 26px;
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(10, 26, 20, 0.98), rgba(8, 19, 15, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .about-content h2 { margin-top: 0; }
+
+    .about-close {
+      float: right;
+      width: auto;
+      padding: 10px 14px;
+    }
+
+    .leaflet-container { background: #d6ebdd; }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: rgba(8, 25, 18, 0.96);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .leaflet-popup-content {
+      margin: 14px 15px;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+
+    .popup-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .popup-meta {
+      margin: 5px 0;
+      font-size: 13px;
+      color: #d8f5e3;
+      line-height: 1.55;
+    }
+
+    .popup-badge {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .custom-div-icon {
+      background: transparent;
+      border: none;
+    }
+
+    .pin {
+      width: 18px;
+      height: 18px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid rgba(255,255,255,0.95);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+    }
+
+    .pin::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.95);
+      top: 4px;
+      left: 4px;
+    }
+
+    @media (max-width: 1120px) {
+      body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .sidebar { height: auto; max-height: 52vh; border-right: none; border-bottom: 1px solid var(--stroke); }
+      .map-wrap, #map { height: 48vh; }
+      .floating-panel { top: 14px; left: 70px; right: 14px; width: auto; }
+    }
+
+    @media (max-width: 640px) {
+      .filter-grid, .team-grid, .triple-row, .btn-row { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr 1fr; }
+      .hero h1 { font-size: 28px; }
+      .floating-panel { left: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <section class="hero">
+      <div class="hero-content">
+        <div class="eyebrow">WebGIS Proyek Kelompok</div>
+        <h1>Wisata Alam Yogyakarta</h1>
+        <p>
+          Dashboard peta interaktif untuk eksplorasi destinasi wisata alam DIY. Dirancang agar menarik saat presentasi, mudah dipakai dosen, dan tetap ringan untuk diakses di laptop maupun HP.
+        </p>
+        <div class="stats">
+          <div class="stat">
+            <strong id="stat-count">8</strong>
+            <span>Lokasi</span>
+          </div>
+          <div class="stat">
+            <strong id="stat-kabupaten">4</strong>
+            <span>Kabupaten</span>
+          </div>
+          <div class="stat">
+            <strong>Siap</strong>
+            <span>Presentasi</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Pencarian & Filter</h2>
+      <div class="search-wrap">
+        <input id="searchInput" type="text" placeholder="Cari nama wisata, kabupaten, atau kata kunci..." />
+      </div>
+      <div class="filter-grid">
+        <div class="select-wrap">
+          <select id="kabupatenFilter">
+            <option value="Semua">Semua Kabupaten</option>
+            <option value="Sleman">Sleman</option>
+            <option value="Bantul">Bantul</option>
+            <option value="Gunungkidul">Gunungkidul</option>
+            <option value="Kulon Progo">Kulon Progo</option>
+          </select>
+        </div>
+        <div class="select-wrap">
+          <select id="sortSelect">
+            <option value="default">Urutkan Data</option>
+            <option value="nama-asc">Nama A-Z</option>
+            <option value="rating-desc">Rating Tertinggi</option>
+            <option value="tiket-asc">Tiket Termurah</option>
+          </select>
+        </div>
+      </div>
+      <div class="chip-group" id="categoryChips">
+        <label class="chip active" data-value="Gunung"><span class="dot" style="background:#2fbf71"></span> Gunung</label>
+        <label class="chip active" data-value="Pantai"><span class="dot" style="background:#2d8cff"></span> Pantai</label>
+        <label class="chip active" data-value="Air Terjun"><span class="dot" style="background:#06b6d4"></span> Air Terjun</label>
+        <label class="chip active" data-value="Hutan"><span class="dot" style="background:#84cc16"></span> Hutan</label>
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-head">
+          <span>Minimal Rating</span>
+          <strong id="ratingValue">4.5</strong>
+        </div>
+        <input type="range" id="ratingSlider" min="4.5" max="4.9" step="0.1" value="4.5" />
+      </div>
+      <div class="triple-row">
+        <button class="primary-btn" id="showAllBtn">Tampilkan Semua</button>
+        <button class="ghost-btn" id="resetViewBtn">Reset Peta</button>
+        <button class="danger-btn" id="clearFilterBtn">Kosongkan</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Daftar Lokasi</h2>
+      <p>Pilih lokasi untuk zoom ke peta, membuka popup, dan menampilkan rute lurus dari Titik Nol Yogyakarta.</p>
+      <div class="place-list" id="placeList"></div>
+    </section>
+
+    <section class="card">
+      <h2>Legenda</h2>
+      <div class="legend-grid">
+        <div class="legend-item"><div class="legend-left"><span class="dot" style="background:#2fbf71"></span> Gunung</div><span>Trekking & view</span></div>
+        <div class="legend-item"><div class="legend-left"><span class="dot" style="background:#2d8cff"></span> Pantai</div><span>Pesisir selatan</span></div>
+        <div class="legend-item"><div class="legend-left"><span class="dot" style="background:#06b6d4"></span> Air Terjun</div><span>Wisata air</span></div>
+        <div class="legend-item"><div class="legend-left"><span class="dot" style="background:#84cc16"></span> Hutan</div><span>Ekowisata hijau</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Tentang Proyek</h2>
+      <p>Bagian ini bisa kamu isi untuk presentasi akhir atau demo ke dosen.</p>
+      <div class="team-grid">
+        <div class="team-box"><strong>Judul</strong> WebGIS Wisata Alam Yogyakarta</div>
+        <div class="team-box"><strong>Tujuan</strong> Menyajikan informasi lokasi wisata alam secara interaktif dan mudah dipahami.</div>
+        <div class="team-box"><strong>Tools</strong> HTML, CSS, JavaScript, Leaflet, OpenStreetMap</div>
+        <div class="team-box"><strong>Data</strong> Contoh data point. Bisa diganti GeoJSON hasil digitasi/QGIS kelompokmu.</div>
+      </div>
+      <div class="btn-row">
+        <button class="primary-btn" id="openAboutBtn">Lihat Detail Proyek</button>
+        <button class="ghost-btn" id="toggleRouteBtn">Tampilkan Rute</button>
+      </div>
+    </section>
+  </aside>
+
+  <main class="map-wrap">
+    <div id="map"></div>
+
+    <div class="map-toolbar">
+      <button class="tool-btn" id="zoomJogjaBtn" title="Fokus DIY">⌂</button>
+      <button class="tool-btn" id="fitDataBtn" title="Lihat semua data">◎</button>
+      <button class="tool-btn" id="toggleBoundaryBtn" title="Batas kabupaten">▣</button>
+    </div>
+
+    <div class="floating-panel">
+      <h3>Dashboard Interaktif</h3>
+      <p>
+        Versi ini lebih powerful: ada filter lanjutan, urutan data, minimal rating, tombol batas wilayah, rute sederhana, dan modal informasi proyek. Tinggal ganti data contoh dengan data kelompokmu agar siap dipresentasikan.
+      </p>
+    </div>
+
+    <div class="map-overlay-bottom">
+      WebGIS Wisata Alam DIY · Modern · Responsif · Mudah dikembangkan
+    </div>
+
+    <div class="about-modal" id="aboutModal">
+      <div class="about-content">
+        <button class="ghost-btn about-close" id="closeAboutBtn">Tutup</button>
+        <h2>Detail Proyek WebGIS Wisata Alam Yogyakarta</h2>
+        <p>
+          WebGIS ini dirancang untuk menampilkan persebaran destinasi wisata alam di Daerah Istimewa Yogyakarta secara informatif, menarik, dan mudah digunakan. Struktur tampilannya sudah cocok untuk tugas kuliah karena mencakup peta, filter, daftar lokasi, popup detail, dan informasi proyek.
+        </p>
+        <h3>Komponen Utama</h3>
+        <ul>
+          <li>Peta interaktif berbasis Leaflet dan OpenStreetMap.</li>
+          <li>Filter kategori, kabupaten, pencarian kata kunci, dan minimal rating.</li>
+          <li>Daftar lokasi interaktif yang terhubung langsung ke peta.</li>
+          <li>Layer batas wilayah sederhana sebagai elemen visual presentasi.</li>
+          <li>Rute garis lurus dari Titik Nol Yogyakarta ke lokasi terpilih.</li>
+        </ul>
+        <h3>Yang Bisa Kamu Edit</h3>
+        <ul>
+          <li>Ganti data di variabel <b>wisataGeoJSON</b> dengan data aslimu.</li>
+          <li>Ganti judul, deskripsi, nama kelompok, dan tujuan proyek.</li>
+          <li>Tambah polygon, foto, statistik, atau data dari file GeoJSON eksternal.</li>
+          <li>Kalau punya data QGIS, ekspor ke GeoJSON lalu tempel ke template ini.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    const map = L.map('map', { zoomControl: true, minZoom: 9 }).setView([-7.82, 110.37], 10);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const defaultCenter = [-7.82, 110.37];
+    const defaultZoom = 10;
+    const originPoint = [-7.801389, 110.364722];
+
+    const wisataGeoJSON = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { nama: 'Kaliurang', kategori: 'Gunung', kabupaten: 'Sleman', rating: 4.7, tiket: 10000, tiketLabel: 'Rp10.000', deskripsi: 'Kawasan wisata alam di lereng Merapi dengan udara sejuk, taman, dan akses mudah.', warna: '#2fbf71' }, geometry: { type: 'Point', coordinates: [110.4235, -7.6004] } },
+        { type: 'Feature', properties: { nama: 'Gunung Api Purba Nglanggeran', kategori: 'Gunung', kabupaten: 'Gunungkidul', rating: 4.8, tiket: 15000, tiketLabel: 'Rp15.000', deskripsi: 'Destinasi geowisata populer dengan view batu purba dan embung yang indah.', warna: '#2fbf71' }, geometry: { type: 'Point', coordinates: [110.5437, -7.8416] } },
+        { type: 'Feature', properties: { nama: 'Pantai Indrayanti', kategori: 'Pantai', kabupaten: 'Gunungkidul', rating: 4.7, tiket: 15000, tiketLabel: 'Rp15.000', deskripsi: 'Pantai pasir putih yang cocok untuk wisata keluarga dan fotografi.', warna: '#2d8cff' }, geometry: { type: 'Point', coordinates: [110.6128, -8.1504] } },
+        { type: 'Feature', properties: { nama: 'Pantai Parangtritis', kategori: 'Pantai', kabupaten: 'Bantul', rating: 4.6, tiket: 10000, tiketLabel: 'Rp10.000', deskripsi: 'Pantai ikonik Yogyakarta dengan sunset, gumuk pasir, dan fasilitas lengkap.', warna: '#2d8cff' }, geometry: { type: 'Point', coordinates: [110.3295, -8.0246] } },
+        { type: 'Feature', properties: { nama: 'Air Terjun Sri Gethuk', kategori: 'Air Terjun', kabupaten: 'Gunungkidul', rating: 4.6, tiket: 15000, tiketLabel: 'Rp15.000', deskripsi: 'Air terjun cantik di kawasan karst dengan pengalaman perahu dan spot foto alami.', warna: '#06b6d4' }, geometry: { type: 'Point', coordinates: [110.5106, -7.9565] } },
+        { type: 'Feature', properties: { nama: 'Hutan Pinus Mangunan', kategori: 'Hutan', kabupaten: 'Bantul', rating: 4.7, tiket: 7500, tiketLabel: 'Rp7.500', deskripsi: 'Ekowisata hutan pinus populer untuk piknik, foto, dan suasana sejuk.', warna: '#84cc16' }, geometry: { type: 'Point', coordinates: [110.4229, -7.9417] } },
+        { type: 'Feature', properties: { nama: 'Kebun Teh Nglinggo', kategori: 'Hutan', kabupaten: 'Kulon Progo', rating: 4.7, tiket: 10000, tiketLabel: 'Rp10.000', deskripsi: 'Wisata alam perbukitan dengan panorama kebun teh dan jalur trekking.', warna: '#84cc16' }, geometry: { type: 'Point', coordinates: [110.1298, -7.6575] } },
+        { type: 'Feature', properties: { nama: 'Air Terjun Kedung Pedut', kategori: 'Air Terjun', kabupaten: 'Kulon Progo', rating: 4.6, tiket: 10000, tiketLabel: 'Rp10.000', deskripsi: 'Wisata air di Kulon Progo dengan kolam alami berwarna hijau kebiruan.', warna: '#06b6d4' }, geometry: { type: 'Point', coordinates: [110.1573, -7.7848] } }
+      ]
+    };
+
+    const boundaryGeoJSON = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { nama: 'Sleman' }, geometry: { type: 'Polygon', coordinates: [[[110.18,-7.52],[110.58,-7.52],[110.58,-7.80],[110.18,-7.80],[110.18,-7.52]]] } },
+        { type: 'Feature', properties: { nama: 'Bantul' }, geometry: { type: 'Polygon', coordinates: [[[110.18,-7.80],[110.53,-7.80],[110.53,-8.10],[110.18,-8.10],[110.18,-7.80]]] } },
+        { type: 'Feature', properties: { nama: 'Gunungkidul' }, geometry: { type: 'Polygon', coordinates: [[[110.45,-7.72],[110.82,-7.72],[110.82,-8.18],[110.45,-8.18],[110.45,-7.72]]] } },
+        { type: 'Feature', properties: { nama: 'Kulon Progo' }, geometry: { type: 'Polygon', coordinates: [[[109.95,-7.55],[110.25,-7.55],[110.25,-7.95],[109.95,-7.95],[109.95,-7.55]]] } }
+      ]
+    };
+
+    const categories = ['Gunung', 'Pantai', 'Air Terjun', 'Hutan'];
+    let activeCategories = [...categories];
+    let searchKeyword = '';
+    let activeKabupaten = 'Semua';
+    let minRating = 4.5;
+    let sortMode = 'default';
+    let geoLayer;
+    let boundaryLayer;
+    let routeLayer;
+    let markerRefs = [];
+    let selectedFeature = null;
+    let boundaryVisible = true;
+    let routeVisible = true;
+
+    const searchInput = document.getElementById('searchInput');
+    const placeList = document.getElementById('placeList');
+    const statCount = document.getElementById('stat-count');
+    const statKabupaten = document.getElementById('stat-kabupaten');
+    const chips = Array.from(document.querySelectorAll('.chip'));
+    const kabupatenFilter = document.getElementById('kabupatenFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const ratingSlider = document.getElementById('ratingSlider');
+    const ratingValue = document.getElementById('ratingValue');
+
+    function formatRupiah(num) {
+      return 'Rp' + Number(num).toLocaleString('id-ID');
+    }
+
+    function createBoundaryLayer() {
+      boundaryLayer = L.geoJSON(boundaryGeoJSON, {
+        style: {
+          color: '#9be15d',
+          weight: 2,
+          fillColor: '#9be15d',
+          fillOpacity: 0.07,
+          dashArray: '6 6'
+        },
+        onEachFeature: (feature, layer) => {
+          layer.bindTooltip(feature.properties.nama, { sticky: true });
+        }
+      }).addTo(map);
+    }
+
+    function clearRoute() {
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+      }
+    }
+
+    function drawRouteTo(coords) {
+      clearRoute();
+      if (!routeVisible) return;
+      const [lng, lat] = coords;
+      routeLayer = L.polyline([originPoint, [lat, lng]], {
+        color: '#fbbf24',
+        weight: 4,
+        opacity: 0.9,
+        dashArray: '10 8'
+      }).addTo(map);
+    }
+
+    function matchesFilter(feature) {
+      const p = feature.properties;
+      const text = `${p.nama} ${p.kabupaten} ${p.kategori} ${p.deskripsi}`.toLowerCase();
+      const inCategory = activeCategories.includes(p.kategori);
+      const inSearch = text.includes(searchKeyword.toLowerCase());
+      const inKabupaten = activeKabupaten === 'Semua' || p.kabupaten === activeKabupaten;
+      const inRating = p.rating >= minRating;
+      return inCategory && inSearch && inKabupaten && inRating;
+    }
+
+    function getPopupHTML(properties) {
+      return `
+        <div>
+          <span class="popup-badge" style="background:${properties.warna}">${properties.kategori}</span>
+          <div class="popup-title">${properties.nama}</div>
+          <div class="popup-meta"><b>Kabupaten:</b> ${properties.kabupaten}</div>
+          <div class="popup-meta"><b>Rating:</b> ${properties.rating}</div>
+          <div class="popup-meta"><b>Tiket:</b> ${properties.tiketLabel}</div>
+          <div class="popup-meta">${properties.deskripsi}</div>
+        </div>
+      `;
+    }
+
+    function createMarker(feature, latlng) {
+      const color = feature.properties.warna;
+      return L.circleMarker(latlng, {
+        radius: 10,
+        fillColor: color,
+        color: '#ffffff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.92
+      });
+    }
+
+    function getFilteredFeatures() {
+      let features = wisataGeoJSON.features.filter(matchesFilter);
+
+      if (sortMode === 'nama-asc') {
+        features.sort((a, b) => a.properties.nama.localeCompare(b.properties.nama, 'id'));
+      } else if (sortMode === 'rating-desc') {
+        features.sort((a, b) => b.properties.rating - a.properties.rating);
+      } else if (sortMode === 'tiket-asc') {
+        features.sort((a, b) => a.properties.tiket - b.properties.tiket);
+      }
+
+      return features;
+    }
+
+    function renderLayer() {
+      if (geoLayer) map.removeLayer(geoLayer);
+      markerRefs = [];
+
+      const filteredFeatures = getFilteredFeatures();
+      const filteredCollection = { type: 'FeatureCollection', features: filteredFeatures };
+
+      geoLayer = L.geoJSON(filteredCollection, {
+        pointToLayer: createMarker,
+        onEachFeature: (feature, layer) => {
+          layer.bindPopup(getPopupHTML(feature.properties));
+          layer.on('click', () => {
+            selectedFeature = feature;
+            drawRouteTo(feature.geometry.coordinates);
+          });
+          markerRefs.push({ feature, layer });
+        }
+      }).addTo(map);
+
+      renderList(filteredFeatures);
+      statCount.textContent = filteredFeatures.length;
+      statKabupaten.textContent = new Set(filteredFeatures.map(f => f.properties.kabupaten)).size;
+
+      if (!filteredFeatures.length) clearRoute();
+    }
+
+    function renderList(features) {
+      placeList.innerHTML = '';
+
+      if (!features.length) {
+        placeList.innerHTML = '<div class="place-item"><div class="place-name">Tidak ada hasil</div><div class="place-desc">Coba ubah pencarian, kabupaten, kategori, atau minimal rating.</div></div>';
+        return;
+      }
+
+      features.forEach((feature) => {
+        const p = feature.properties;
+        const [lng, lat] = feature.geometry.coordinates;
+        const div = document.createElement('div');
+        div.className = 'place-item';
+        div.innerHTML = `
+          <div class="place-head">
+            <div class="place-name">${p.nama}</div>
+            <span class="badge" style="background:${p.warna}">${p.kategori}</span>
+          </div>
+          <div class="place-desc">${p.deskripsi}</div>
+          <div class="place-meta">${p.kabupaten} · Rating ${p.rating} · ${p.tiketLabel}</div>
+        `;
+        div.addEventListener('click', () => {
+          selectedFeature = feature;
+          map.flyTo([lat, lng], 13, { duration: 1.2 });
+          const ref = markerRefs.find(item => item.feature.properties.nama === p.nama);
+          if (ref) setTimeout(() => ref.layer.openPopup(), 450);
+          drawRouteTo(feature.geometry.coordinates);
+        });
+        placeList.appendChild(div);
+      });
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const value = chip.dataset.value;
+        if (chip.classList.contains('active')) {
+          chip.classList.remove('active');
+          activeCategories = activeCategories.filter(c => c !== value);
+        } else {
+          chip.classList.add('active');
+          if (!activeCategories.includes(value)) activeCategories.push(value);
+        }
+        renderLayer();
+      });
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      searchKeyword = e.target.value.trim();
+      renderLayer();
+    });
+
+    kabupatenFilter.addEventListener('change', (e) => {
+      activeKabupaten = e.target.value;
+      renderLayer();
+    });
+
+    sortSelect.addEventListener('change', (e) => {
+      sortMode = e.target.value;
+      renderLayer();
+    });
+
+    ratingSlider.addEventListener('input', (e) => {
+      minRating = Number(e.target.value);
+      ratingValue.textContent = minRating.toFixed(1);
+      renderLayer();
+    });
+
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+      activeCategories = [...categories];
+      chips.forEach(chip => chip.classList.add('active'));
+      activeKabupaten = 'Semua';
+      kabupatenFilter.value = 'Semua';
+      searchKeyword = '';
+      searchInput.value = '';
+      minRating = 4.5;
+      ratingSlider.value = 4.5;
+      ratingValue.textContent = '4.5';
+      sortMode = 'default';
+      sortSelect.value = 'default';
+      renderLayer();
+    });
+
+    document.getElementById('clearFilterBtn').addEventListener('click', () => {
+      activeCategories = [];
+      chips.forEach(chip => chip.classList.remove('active'));
+      renderLayer();
+    });
+
+    document.getElementById('resetViewBtn').addEventListener('click', () => {
+      map.flyTo(defaultCenter, defaultZoom, { duration: 1.1 });
+      clearRoute();
+    });
+
+    document.getElementById('zoomJogjaBtn').addEventListener('click', () => {
+      map.flyTo(defaultCenter, defaultZoom, { duration: 1.1 });
+    });
+
+    document.getElementById('fitDataBtn').addEventListener('click', () => {
+      if (geoLayer && geoLayer.getLayers().length) {
+        map.fitBounds(geoLayer.getBounds(), { padding: [40, 40] });
+      }
+    });
+
+    document.getElementById('toggleBoundaryBtn').addEventListener('click', () => {
+      boundaryVisible = !boundaryVisible;
+      if (boundaryVisible) {
+        if (!boundaryLayer) createBoundaryLayer();
+        else boundaryLayer.addTo(map);
+      } else if (boundaryLayer) {
+        map.removeLayer(boundaryLayer);
+      }
+    });
+
+    document.getElementById('toggleRouteBtn').addEventListener('click', () => {
+      routeVisible = !routeVisible;
+      if (!routeVisible) clearRoute();
+      else if (selectedFeature) drawRouteTo(selectedFeature.geometry.coordinates);
+    });
+
+    const aboutModal = document.getElementById('aboutModal');
+    document.getElementById('openAboutBtn').addEventListener('click', () => aboutModal.classList.add('active'));
+    document.getElementById('closeAboutBtn').addEventListener('click', () => aboutModal.classList.remove('active'));
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) aboutModal.classList.remove('active');
+    });
+
+    createBoundaryLayer();
+    renderLayer();
+  </script>
+</body>
+</html>
